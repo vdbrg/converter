@@ -44,7 +44,16 @@ maybeParser parser =
 
 amount : Parser (Maybe Float)
 amount = 
-    maybeParser float
+    oneOf [ backtrackable fraction, backtrackable float ] |> maybeParser
+
+fraction : Parser Float
+fraction =
+    succeed (/)
+        |= float
+        |. whitespace
+        |. symbol "/"
+        |. whitespace
+        |= float
 
 unit : Dict String Unit -> Parser (Maybe Unit)
 unit units = 
