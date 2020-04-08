@@ -11,14 +11,11 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 
-import PhysicalQuantities.PhysicalQuantity exposing (QuantityDescription, Quantity, Measurement(..), convert)
-import PhysicalQuantities.ConversionParser exposing (parseConversionRequest, ConversionRequest, emptyRequest)
-import PhysicalQuantities.KnownQuantities exposing (quantities, getQuantityDescription)
+import PhysicalQuantities.PhysicalQuantity exposing (Measurement(..), convert)
+import PhysicalQuantities.ConversionParser exposing (parseConversionRequest, ConversionRequest(..))
+import PhysicalQuantities.KnownQuantities exposing (quantities, conversionModifiers, convertWithModifier)
 
 import String
-import Maybe.Extra as MaybeE
-import List.Extra as ListE
-import Dict exposing (Dict)
 import Tuple
 
 type alias Model =
@@ -53,7 +50,7 @@ view model =
         )
 
 parseInput : String -> Result String ConversionRequest
-parseInput input = parseConversionRequest quantities input
+parseInput input = parseConversionRequest quantities conversionModifiers input
 
 viewResult : Maybe (Result String ConversionRequest) -> Element msg
 viewResult maybeResult =
@@ -67,42 +64,34 @@ viewResult maybeResult =
 viewConversionRequest : ConversionRequest -> Element msg
 viewConversionRequest request =
     let
-        maybeQuantities = [ request.fromUnit, request.toUnit ] |> List.map (Maybe.map .quantity)
-        recogQuantities = MaybeE.values maybeQuantities |> ListE.unique
+        eqView = boxedText [] "="
     in
-        case recogQuantities of
-            [] -> text "No quantity found"
-            [quantity] -> 
+        case request of
+            None -> text "No quantity found"
+            OnlyFrom fromUnit -> text "Need from and to unit"
+            InconsistentQuantities fromUnit toUnit -> text <| "Found multiple quantities: "  ++ fromUnit.quantity ++ " and " ++ toUnit.quantity
+            InconsistentModifier fromUnit modifier toUnit -> text <| "Can't convert from " ++ fromUnit.quantity ++ " to " ++ toUnit.quantity ++ " with " ++ modifier.modifierType --++ "(" ++ modifierFromQuantity ++ "/" ++ modifierToQuantity ++ ")"
+            SimpleRequest amount fromUnit toUnit -> 
                 let
-                   conv = boxedText [] <| "Convert " ++ quantity
-                   quantityDescription = getQuantityDescription quantity
-                   units = mappend request.fromUnit request.toUnit
+                    fromView = boxedText [] <| formatNumber amount ++ " " ++ fromUnit.symbol
+                    toValue = convert (Measurement amount fromUnit) toUnit
+                    toValueView = boxedText [] <| formatNumber toValue ++ " " ++ toUnit.symbol
+                    conv = boxedText [] <| "Convert " ++ fromUnit.quantity
                 in
-                    case units of
-                        Nothing -> err <| "Need from and to unit"
-                        Just (fromUnit, toUnit) -> 
-                            case quantityDescription of
-                                Nothing -> err <| "Unknown quantity " ++ quantity
-                                Just desc ->
-                                    case request.amount of
-                                        Nothing -> conv
-                                        Just amount -> 
-                                            let
-                                                fromView = boxedText [] <| formatNumber amount ++ " " ++ fromUnit.symbol
-                                                eqView = boxedText [] "="
-                                                toValue = convert desc (Measurement amount fromUnit) toUnit
-                                                toValueView = boxedText [] <| formatNumber toValue ++ " " ++ toUnit.symbol
-                                            in
-                                                row [spacing 5] [ conv, fromView, eqView, toValueView]
-            qs ->  err <| "Found multiple quantities: "  ++  String.join ", " qs
+                    row [spacing 5] [ conv, fromView, eqView, toValueView]
+            WithModifier amount fromUnit modifier toUnit ->
+                let
+                    fromView = boxedText [] <| formatNumber amount ++ " " ++ fromUnit.symbol
+                    modifierView = boxedText [] <| modifier.name
+                    toValue = convertWithModifier modifier (Measurement amount fromUnit) toUnit
+                    toValueView = boxedText [] <| formatNumber toValue ++ " " ++ toUnit.symbol
+                    conv = boxedText [] <| "Convert " ++ fromUnit.quantity
+                in
+                    row [spacing 5] [ conv, fromView, modifierView, eqView, toValueView]
 
 formatNumber : Float -> String
 formatNumber n =
     String.fromFloat n
-
-mappend : Maybe a -> Maybe b -> Maybe (a,b)
-mappend va vb =
-    Maybe.map2 Tuple.pair va vb 
 
 err : String -> Element msg
 err msg =
