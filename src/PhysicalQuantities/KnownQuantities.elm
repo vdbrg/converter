@@ -35,3 +35,11 @@ convertWithModifier modifier (Measurement amount unit) toUnit =
         (SiConversion _ fromSi) =  toUnit.conversion
     in
         toSi amount |> modifier.siUnitConversion |> fromSi
+
+convert : Measurement -> Unit -> Float
+convert (Measurement amount unit) toUnit =
+    let
+        (SiConversion toSi _) = unit.conversion
+        (SiConversion _ fromSi) =  toUnit.conversion
+    in
+        toSi amount |> fromSi

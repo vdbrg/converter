@@ -93,14 +93,6 @@ conversionFromPrefix baseSiUnit prefix exponent =
         SiConversion (\x -> baseToSi x*prefixProp.factor^floatExp) (\x -> (siToBase x)/prefixProp.factor^floatExp)
 
     
-convert : Measurement -> Unit -> Float
-convert (Measurement amount unit) toUnit =
-    let
-        (SiConversion toSi _) = unit.conversion
-        (SiConversion _ fromSi) =  toUnit.conversion
-    in
-        toSi amount |> fromSi
-
 convertToSi : QuantityDescription -> Measurement -> Float
 convertToSi quantity (Measurement amount unit) = 
     case unit.conversion of
