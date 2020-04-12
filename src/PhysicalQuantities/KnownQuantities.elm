@@ -1,10 +1,11 @@
 module PhysicalQuantities.KnownQuantities exposing (..)
 
-import PhysicalQuantities.PhysicalQuantity exposing (QuantityDescription, Quantity, Measurement(..), Conversion(..), Unit, convert)
+import PhysicalQuantities.PhysicalQuantity exposing (QuantityDescription, Quantity, Measurement(..), Conversion(..), Unit)
 import PhysicalQuantities.ConversionModifier exposing (ConversionModifier)
 import PhysicalQuantities.Mass exposing (mass)
 import PhysicalQuantities.Length exposing (length)
 import PhysicalQuantities.Volume exposing (volume)
+import PhysicalQuantities.Temperature exposing (temperature)
 import PhysicalQuantities.Density exposing (densities)
 
 import Dict exposing (Dict)
@@ -14,6 +15,7 @@ quantities =
     [ mass
     , length
     , volume
+    , temperature
     ]
 
 conversionModifiers : List ConversionModifier
