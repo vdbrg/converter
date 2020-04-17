@@ -3,7 +3,7 @@ module Main exposing (main)
 import Html exposing (Html)
 import Html.Events
 import Html.Attributes as Attributes
-import Browser
+import Browser exposing (Document)
 
 import Element exposing (Attribute, Element, Color, el, text, row, column, alignLeft, alignRight, fill, width, rgb255, spacing, centerX, centerY, padding, htmlAttribute, px, minimum, maximum)
 import Element.Background as Background
@@ -37,19 +37,22 @@ type ConversionState
 
 type alias PinnedItem = ConversionState
 
-update : Message -> Model ->  Model
+update : Message -> Model -> ( Model, Cmd Message )
 update message model = 
     case message of
         ChangeInput input ->
-            { model | inputText = input, result = if String.isEmpty input then Nothing else Just <| parseInput input }
+            noCmd { model | inputText = input, result = if String.isEmpty input then Nothing else Just <| parseInput input }
         PinItem ->
             case model.result of
-                Nothing -> model
+                Nothing -> noCmd model
                 Just result ->
                     case result of
-                        Err _ -> model
-                        Ok conversionRequest -> { model | pinned = appendToList (requestToState conversionRequest) model.pinned}
-        UnpinItem idx -> { model | pinned = removeFromList idx model.pinned }
+                        Err _ -> noCmd model
+                        Ok conversionRequest -> noCmd { model | pinned = appendToList (requestToState conversionRequest) model.pinned}
+        UnpinItem idx -> noCmd { model | pinned = removeFromList idx model.pinned }
+
+noCmd : Model -> ( Model, Cmd Message)
+noCmd model = ( model, Cmd.none )
 
 appendToList : a -> List a -> List a
 appendToList item list =
@@ -60,15 +63,14 @@ removeFromList  index list =
     List.take index list ++ List.drop (index + 1) list
 
 
-view : Model -> Html Message
+view : Model -> Document Message
 view model =
-    Element.layout
-        [ Font.family [ Font.typeface "Courier" ]
+    toDoc <| Element.layout
+        [ Font.family [ Font.typeface "Courier New" ]
         , Font.size 18
         ]
         ( column [ width fill, centerX, width (fill |> minimum 300 |> maximum 900), spacing 30, padding 10 ]
-            [ meta
-            , el h1 (text "Converter")
+            [ el h1 (text "Converter")
             , Input.text [ ]
                 { text = model.inputText
                 , onChange = ChangeInput
@@ -80,8 +82,11 @@ view model =
             ]
         )
 
-meta : Element Message
-meta = Element.html <| Html.node "meta" [ Attributes.name "viewport", Attributes.attribute "content" "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" ] []
+toDoc : Html Message -> Document Message
+toDoc v = { title = "Converter", body = [meta, v] }
+
+meta : Html Message
+meta = Html.node "meta" [ Attributes.name "viewport", Attributes.attribute "content" "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" ] []
 
 viewPinnedItems : List PinnedItem -> Element Message
 viewPinnedItems pinnedItems =
@@ -181,12 +186,16 @@ boxedText : List (Attribute Message) -> String -> Element Message
 boxedText attr str
     =  el ([ Border.rounded 5, Border.width 1, padding 10, Border.solid ] ++ attr) <| text str
 
+main : Program () Model Message
 main =
-    Browser.sandbox
-        { init = { inputText = "", result = Nothing, pinned = [] }
+    Browser.document
+        { init = init
         , update = update
         , view = view
+        , subscriptions = \_ -> Sub.none
         }
+
+init = \_ -> noCmd { inputText = "", result = Nothing, pinned = [] }
 
 h1 : List (Element.Attribute Message)
 h1 = 
