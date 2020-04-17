@@ -2,6 +2,7 @@ module Main exposing (main)
 
 import Html exposing (Html)
 import Html.Events
+import Html.Attributes as Attributes
 import Browser
 
 import Element exposing (Attribute, Element, Color, el, text, row, column, alignLeft, alignRight, fill, width, rgb255, spacing, centerX, centerY, padding, htmlAttribute, px, minimum, maximum)
@@ -66,7 +67,8 @@ view model =
         , Font.size 18
         ]
         ( column [ width fill, centerX, width (fill |> minimum 300 |> maximum 900), spacing 30, padding 10 ]
-            [ el h1 (text "Converter")
+            [ meta
+            , el h1 (text "Converter")
             , Input.text [ ]
                 { text = model.inputText
                 , onChange = ChangeInput
@@ -77,6 +79,9 @@ view model =
             , viewPinnedItems model.pinned
             ]
         )
+
+meta : Element Message
+meta = Element.html <| Html.node "meta" [ Attributes.name "viewport", Attributes.attribute "content" "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" ] []
 
 viewPinnedItems : List PinnedItem -> Element Message
 viewPinnedItems pinnedItems =
